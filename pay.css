@@ -1,0 +1,75 @@
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-image: url('https://i.postimg.cc/bNnS7pcJ/01.png');
+    background-size: cover;
+    background-position: center;
+}
+.main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8); /* 新增白底 */
+    padding: 20px; /* 增加內邊距 */
+    border-radius: 10px; /* 增加圓角 */
+}
+.header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px; /* 減少標題圖片與格子之間的空間 */
+}
+.header img {
+    max-width: 100%;
+    height: auto;
+}
+.top-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px; /* 減少橫排圖片之間的空間 */
+    margin-bottom: 10px; /* 減少橫排與主內容之間的空間 */
+}
+.top-row img {
+    max-width: 100px; /* 調整橫排圖片的大小 */
+    height: auto;
+}
+.side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 5px; /* 減少豎排圖片之間的空間 */
+    margin-right: 10px; /* 減少豎排與主內容之間的空間 */
+}
+.side-column img {
+    max-width: 100px; /* 調整豎排圖片的大小 */
+    height: auto;
+}
+.container {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 修改為 13 列 */
+    gap: 5px; /* 減少格子之間的空間 */
+    text-align: center;
+}
+.lottery-item {
+    cursor: pointer;
+}
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+.hidden {
+    display: none;
+}
+.logo {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+}
+.logo img {
+    width: 500px; /* 調整 logo 的大小 */
+    height: auto;
+}
