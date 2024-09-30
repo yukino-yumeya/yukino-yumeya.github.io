@@ -15,7 +15,7 @@ document.querySelectorAll('.lottery-item img').forEach(function(img) {
         // 延遲2秒後顯示中獎訊息並隱藏加載畫面
         setTimeout(function() {
             document.getElementById('loadingScreen').style.display = 'none';
-            const customMessage = '' + selectedPrize;
+            const customMessage = '恭喜你抽中了!\n' + selectedPrize;
             showAlert(customMessage);
         }, 2000);  // 模擬2秒的加載時間
     });
