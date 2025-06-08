@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>實況互動大富翁</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background: url('https://i.postimg.cc/vZpHB4TG/IMG-7202.jpg') no-repeat center center fixed;
+      background-size: 28%;
+      background-position: center center;
+      overflow: hidden;
+      height: 100vh;
+    }
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      position: relative;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, 100px);
+      grid-template-rows: repeat(7, 100px);
+      gap: 2px;
+      background-size: cover;
+      border: none;
+      border-radius: 15px;
+      position: relative;
+      z-index: 1;
+    }
+    .square {
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-size: 10px;
+      font-weight: bold;
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      z-index: 1;
+    }
+    .square img {
+      width: 90px;
+      height: 90px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+    }
+    .player {
+      width: 60px;
+      height: 60px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 50%;
+      border: none;
+      position: absolute;
+      z-index: 10;
+      font-size: 18px;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      top: 0;
+      left: 0;
+    }
+    .controls {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      z-index: 2;
+    }
+    .btn {
+      padding: 10px 20px;
+      margin: 0;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      width: 120px;
+      transition: all 0.3s ease;
+    }
+    .btn:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    .draw-btn {
+      background: #e74c3c;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+    }
+    .event-log {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 300px;
+      height: 180px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      overflow-y: auto;
+      font-size: 12px;
+      z-index: 2;
+    }
+    .card-modal, .draw-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 300px;
+    }
+    .draw-box {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 300px;
+    }
+    .draw-box .card-header {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    .draw-box button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    .draw-box .draw-action-btn {
+      background: #e74c3c;
+      color: white;
+      margin: 0 10px;
+    }
+    .draw-box .draw-action-btn:hover {
+      background: #c0392b;
+      transform: translateY(-2px);
+    }
+    .card-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .card-content {
+      margin-bottom: 20px;
+    }
+    .dice-img {
+      width: 80px;
+      height: 80px;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .dice-rolling {
+      animation: diceRoll 1.5s ease-out;
+    }
+    
+    @keyframes diceRoll {
+      0% {
+        transform: rotate(0deg) scale(1);
+      }
+      25% {
+        transform: rotate(90deg) scale(1.2);
+      }
+      50% {
+        transform: rotate(180deg) scale(0.8);
+      }
+      75% {
+        transform: rotate(270deg) scale(1.3);
+      }
+      100% {
+        transform: rotate(360deg) scale(1);
+      }
+    }
+    
+    .dice-result {
+      animation: diceResult 0.5s ease-out;
+    }
+    
+    @keyframes diceResult {
+      0% {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.3);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    .dice-container {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dice-glow {
+      box-shadow: 0 0 20px rgba(52, 152, 219, 0.8), 0 0 40px rgba(52, 152, 219, 0.4);
+    }
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <div class="board" id="gameBoard"></div>
+  <div class="player" id="player"></div>
+  <div class="controls">
+    <button class="btn" id="rollBtn" onclick="game.rollDice()">🎲 擲骰子</button>
+    <button class="btn" onclick="game.resetGame()">🔄 重置</button>
+    <button class="btn" onclick="enableSetMode()">🎯 設定角色位置</button>
+    <div class="dice-container">
+      <img id="diceImg" class="dice-img" src="https://i.postimg.cc/mkFmTp5L/IMG-7235.jpg">
+    </div>
+  </div>
+  <div class="event-log" id="eventLog"></div>
+</div>
+<div class="card-modal" id="cardModal">
+  <div class="card">
+    <div class="card-header" id="cardHeader"></div>
+    <div class="card-content" id="cardContent"></div>
+    <button onclick="game.closeCard()">確定</button>
+  </div>
+</div>
+<div class="draw-modal" id="drawModal">
+  <div class="draw-box">
+    <div class="card-header" id="drawHeader">準備抽卡</div>
+    <button class="draw-action-btn" onclick="game.executeDrawCard()">🎴 抽</button>
+  </div>
+</div>
+
+<script>
+  class MonopolyGame {
+    constructor() {
+      this.totalSquares = 28;
+      this.gridMap = this.generateBorderIndicesClockwise(7);
+      this.player = document.getElementById('player');
+      this.eventLog = document.getElementById('eventLog');
+      this.cardModal = document.getElementById('cardModal');
+      this.drawModal = document.getElementById('drawModal');
+      this.diceImg = document.getElementById('diceImg');
+      this.rollBtn = document.getElementById('rollBtn');
+      this.setMode = false;
+      this.squares = [];
+      this.characterImage = 'https://i.postimg.cc/wTLgtyQT/IMB-CIB2-R3.gif';
+      this.isRolling = false;
+      
+      this.specialSquares = {
+        4: 'community',
+        13: 'community',
+        9: 'chance',
+        20: 'chance'
+      };
+      
+      this.squareImages = [
+        'https://i.postimg.cc/yxqNbkqf/image.png',
+        'https://i.postimg.cc/8CjPkhNK/10.png',
+        'https://i.postimg.cc/B6pZZNRK/1.png',
+        'https://i.postimg.cc/76KCtxHd/20.png',
+        'https://i.postimg.cc/d01D7bm9/image.png',
+        'https://i.postimg.cc/VktCsQg0/15.png',
+        'https://i.postimg.cc/jdwWv0G3/image.png',
+        'https://i.postimg.cc/VktCsQg0/15.png',
+        'https://i.postimg.cc/B6pZZNRK/1.png',
+        'https://i.postimg.cc/9XT0qtTs/image.png',
+        'https://i.postimg.cc/76KCtxHd/20.png',
+        'https://i.postimg.cc/8CjPkhNK/10.png',
+        'https://i.postimg.cc/6343cCP2/image.png',
+        'https://i.postimg.cc/d01D7bm9/image.png',
+        'https://i.postimg.cc/prdjPmcP/2.png',
+        'https://i.postimg.cc/8CjPkhNK/10.png',
+        'https://i.postimg.cc/VktCsQg0/15.png',
+        'https://i.postimg.cc/76KCtxHd/20.png',
+        'https://i.postimg.cc/ht4twkwq/image.png',
+        'https://i.postimg.cc/B6pZZNRK/1.png',
+        'https://i.postimg.cc/9XT0qtTs/image.png',
+        'https://i.postimg.cc/VktCsQg0/15.png',
+        'https://i.postimg.cc/8CjPkhNK/10.png',
+        'https://i.postimg.cc/prdjPmcP/2.png',
+      ];
+      
+      this.globalOffsetX = 590;
+      this.globalOffsetY = 100;
+
+      this.chanceCards = [
+        { text: "3咩幣", percent: 1 },
+        { text: "鼠標靜態(3顆)", percent: 5 },
+        { text: "今天我生日圖", percent: 5 },
+        { text: "訂閱徽章", percent: 9 },
+        { text: "委託折價200元(低消1000元)", percent: 15 },
+        { text: "再骰一次", percent: 15 },
+        { text: "周邊折價150元(低消700元)", percent: 15 },
+        { text: "周邊整組原價8折", percent: 15 },
+        { text: "委託折價100元(低消600元)", percent: 20 }
+      ];
+      this.communityCards = [
+        { text: "2咩幣", percent: 2 },
+        { text: "1咩幣", percent: 5 },
+        { text: "吊飾", percent: 5 },
+        { text: "5cm立牌", percent: 5 },
+        { text: "浣桃工作室的委託項目9折", percent: 8 },
+        { text: "時數乘以2", percent: 10 },
+        { text: "時數除以2", percent: 12 },
+        { text: "+1小時", percent: 10 },
+        { text: "-1小時", percent: 10 },
+        { text: "-30分鐘", percent: 13 },
+        { text: "+30分鐘", percent: 10 },
+        { text: "委託折價100元(低消600元)", percent: 10 }
+      ];
+      this.diceImages = {
+        1: 'https://i.postimg.cc/jSknhqj1/1.png',
+        2: 'https://i.postimg.cc/3rgpHHLy/2.png',
+        3: 'https://i.postimg.cc/Z5qy3vJ3/3.png',
+        4: 'https://i.postimg.cc/kXsbBvPq/4.png',
+        5: 'https://i.postimg.cc/KvxTGsV0/5.png',
+        6: 'https://i.postimg.cc/mrJMTZf9/6.png'
+      };
+
+      this.currentCardType = null;
+
+      this.createBoard();
+      this.setCharacterImage(this.characterImage);
+      this.position = 0;
+      this.moveTo(this.position);
+    }
+
+    generateBorderIndicesClockwise(size) {
+      const result = [];
+      for (let i = size - 1; i >= 0; i--) {
+        result.push((size - 1) * size + i);
+      }
+      for (let i = size - 2; i > 0; i--) {
+        result.push(i * size);
+      }
+      for (let i = 0; i < size; i++) {
+        result.push(i);
+      }
+      for (let i = 1; i < size - 1; i++) {
+        result.push(i * size + size - 1);
+      }
+      return result;
+    }
+
+    createBoard() {
+      const board = document.getElementById('gameBoard');
+      for (let i = 0; i < 49; i++) {
+        const div = document.createElement('div');
+        div.className = 'square';
+        if (this.gridMap.includes(i)) {
+          const displayIndex = this.gridMap.indexOf(i) + 1;
+          const imgUrl = this.squareImages[displayIndex - 1] || `https://via.placeholder.com/50x50?text=${displayIndex}`;
+          
+          div.innerHTML = `<img src='${imgUrl}'>`;
+          div.dataset.index = displayIndex - 1;
+          div.addEventListener('click', () => {
+            if (this.setMode) {
+              this.setMode = false;
+              this.log(`設定到第 ${displayIndex} 格`);
+              this.moveTo(displayIndex - 1);
+            }
+          });
+          this.squares.push(div);
+        } else {
+          div.style.visibility = 'hidden';
+        }
+        board.appendChild(div);
+      }
+    }
+
+    setCharacterImage(url) {
+      this.player.style.backgroundImage = `url('${url}')`;
+    }
+
+    moveTo(index, animate = false) {
+      index = index % this.gridMap.length;
+      const steps = (index - this.position + this.gridMap.length) % this.gridMap.length;
+      
+      if (animate && steps > 0) {
+        let moved = 0;
+        const stepMove = () => {
+          if (moved < steps) {
+            this.position = (this.position + 1) % this.gridMap.length;
+            this.renderPlayer();
+            moved++;
+            setTimeout(stepMove, 300);
+          } else {
+            this.checkSquare();
+            this.isRolling = false;
+            this.rollBtn.disabled = false;
+            this.rollBtn.textContent = '🎲 擲骰子';
+          }
+        };
+        stepMove();
+      } else {
+        this.position = index;
+        this.renderPlayer();
+        this.checkSquare();
+      }
+    }
+
+    renderPlayer() {
+      const targetGridIndex = this.gridMap[this.position];
+      
+      const squares = document.querySelectorAll('.square[data-index]');
+      let targetSquare = null;
+      
+      for (let square of squares) {
+        if (parseInt(square.dataset.index) === this.position) {
+          targetSquare = square;
+          break;
+        }
+      }
+      
+      if (targetSquare) {
+        const board = document.getElementById('gameBoard');
+        const squareRect = targetSquare.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
+        
+        const x = squareRect.left - boardRect.left + targetSquare.offsetWidth / 2 - 15 + this.globalOffsetX;
+        const y = squareRect.top - boardRect.top + targetSquare.offsetHeight / 2 - 15 + this.globalOffsetY;
+        
+        this.player.style.transform = `translate(${x}px, ${y}px)`;
+      }
+    }
+
+    async rollDice() {
+      if (this.isRolling) return;
+      
+      this.isRolling = true;
+      this.rollBtn.disabled = true;
+      this.rollBtn.textContent = '擲骰中...';
+      
+      const steps = Math.floor(Math.random() * 6) + 1;
+      
+      this.startDiceAnimation();
+      
+      await this.sleep(1500);
+      
+      this.showDiceResult(steps);
+      
+      await this.sleep(500);
+      
+      this.log(`擲出 ${steps}`);
+      
+      await this.sleep(300);
+      
+      this.moveTo(this.position + steps, true);
+    }
+
+    startDiceAnimation() {
+      this.diceImg.className = 'dice-img';
+      
+      this.diceImg.classList.add('dice-rolling', 'dice-glow');
+      
+      let frame = 0;
+      const animationInterval = setInterval(() => {
+        const randomDice = Math.floor(Math.random() * 6) + 1;
+        this.diceImg.src = this.diceImages[randomDice];
+        frame++;
+        
+        if (frame >= 15) {
+          clearInterval(animationInterval);
+        }
+      }, 100);
+    }
+
+    showDiceResult(result) {
+      this.diceImg.classList.remove('dice-rolling', 'dice-glow');
+      
+      this.diceImg.src = this.diceImages[result];
+      
+      this.diceImg.classList.add('dice-result');
+      
+      setTimeout(() => {
+        this.diceImg.classList.remove('dice-result');
+      }, 500);
+    }
+
+    sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    checkSquare() {
+      this.currentCardType = null;
+      
+      if (this.specialSquares[this.position]) {
+        const cardType = this.specialSquares[this.position];
+        const squareNumber = this.position + 1;
+        
+        this.currentCardType = cardType;
+        
+        if (cardType === 'chance') {
+          this.log(`抵達第${squareNumber}格 (機會格)`);
+          this.showDrawModal('機會格', '機會卡');
+        } else if (cardType === 'community') {
+          this.log(`抵達第${squareNumber}格 (命運格)`);
+          this.showDrawModal('命運格', '命運卡');
+        }
+      }
+    }
+
+    showDrawModal(squareType, cardType) {
+      const drawHeader = document.getElementById('drawHeader');
+      drawHeader.textContent = `你抵達${squareType}，準備抽${cardType}`;
+      this.drawModal.style.display = 'flex';
+    }
+
+    executeDrawCard() {
+      if (!this.currentCardType) return;
+      
+      this.drawModal.style.display = 'none';
+      
+      const list = this.currentCardType === 'chance' ? this.chanceCards : this.communityCards;
+      const msg = this.pickByPercent(list);
+      const cardName = this.currentCardType === 'chance' ? '機會卡' : '命運卡';
+      
+      this.showCard(cardName, msg);
+      this.log(`抽到${cardName}：${msg}`);
+      
+      this.currentCardType = null;
+    }
+
+    pickByPercent(options) {
+      let rand = Math.random() * 100;
+      for (const item of options) {
+        if ((rand -= item.percent) < 0) return item.text;
+      }
+      return options[options.length - 1].text;
+    }
+
+    showCard(title, content) {
+      document.getElementById('cardHeader').innerText = title;
+      document.getElementById('cardContent').innerText = content;
+      this.cardModal.style.display = 'flex';
+    }
+
+    closeCard() {
+      this.cardModal.style.display = 'none';
+    }
+
+    resetGame() {
+      this.position = 0;
+      this.moveTo(this.position);
+      this.eventLog.innerHTML = '';
+      this.currentCardType = null;
+      this.drawModal.style.display = 'none';
+      this.cardModal.style.display = 'none';
+      this.isRolling = false;
+      this.rollBtn.disabled = false;
+      this.rollBtn.textContent = '🎲 擲骰子';
+      this.diceImg.className = 'dice-img';
+      this.diceImg.src = 'https://i.postimg.cc/mkFmTp5L/IMG-7235.jpg';
+      this.log("遊戲已重置 (從格子1起點)");
+    }
+
+    log(msg) {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.textContent = `[${time}] ${msg}`;
+      this.eventLog.appendChild(entry);
+      this.eventLog.scrollTop = this.eventLog.scrollHeight;
+    }
+  }
+
+  const game = new MonopolyGame();
+  
+  function enableSetMode() {
+    if (game.isRolling) return;
+    game.setMode = true;
+    game.log("請點選棋盤格子以設定角色位置");
+  }
+</script>
+</body>
+</html>
