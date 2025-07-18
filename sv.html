@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shadowverse 抽卡系統示例</title>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      background-image: var(--bg-image, none);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+    }
+    #draw-screen {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    /* 按鈕1x3排列 */
+    #button-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+    }
+    #overlay.active {
+      opacity: 1;
+    }
+    #card-container {
+      display: none;
+      grid-gap: 10px;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.5s ease;
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* 單抽置中 */
+    #card-container.layout-1x1 {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 80vh;
+      position: relative;
+    }
+    
+    #card-container.layout-1x8 {
+      display: grid;
+      grid-template-columns: repeat(8, var(--card-width, 100px));
+      grid-template-rows: var(--card-height, 140px);
+      justify-content: center;
+    }
+
+    #card-container.layout-2x4 {
+      display: grid;
+      grid-template-columns: repeat(4, var(--card-width, 100px));
+      grid-template-rows: repeat(2, var(--card-height, 140px));
+      animation: fadeInLayout 0.6s ease forwards;
+    }
+    @keyframes fadeInLayout {
+      0% {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .card {
+      width: var(--card-width, 100px);
+      height: var(--card-height, 140px);
+      perspective: 800px;
+      position: relative;
+      transition: transform 0.4s;
+      cursor: pointer;
+      /* 徹底移除白框 */
+      border: 0 !important;
+      outline: 0 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+    }
+    .card.focused {
+      transform: scale(1.2) translateY(-10px);
+      z-index: 5;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease;
+      border-radius: 8px;
+      overflow: hidden;
+      /* 徹底移除白框 */
+      border: 0 !important;
+      outline: 0 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front,
+    .card-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      /* 徹底移除白框 */
+      border: 0 !important;
+      outline: 0 !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: transparent !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+    }
+    .card-back {
+      background-image: url('https://i.postimg.cc/Pqfggh4V/image.png');
+      transform: rotateY(0deg);
+    }
+    .card-back.rare-back {
+      background-image: url('https://i.postimg.cc/Wz4VwFps/sv.gif');
+    }
+    .card-front {
+      transform: rotateY(-180deg) scaleX(-1);
+    }
+    /* 翻轉後顯示正面 */
+    .card.flipped .card-back {
+      transform: rotateY(180deg);
+    }
+    .card.flipped .card-front {
+      transform: rotateY(0deg) scaleX(-1);
+    }
+    .rare-animation,
+    .normal-animation {
+      position: absolute;
+      top: calc(var(--card-height, 140px) * -0.07);
+      left: calc(var(--card-width, 100px) * -0.1);
+      width: calc(var(--card-width, 100px) * 1.2);
+      height: calc(var(--card-height, 140px) * 1.14);
+      pointer-events: none;
+      z-index: 2;
+    }
+    #return-button {
+      display: none;
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #0066cc;
+      color: #fff;
+      margin: 5px;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    
+    /* Debug按鈕樣式 */
+    #force-rare {
+      background: #cc6600;
+      display: none !important; /* 預設隱藏 */
+    }
+    
+    /* 顯示debug按鈕的類別 */
+    body.debug-mode #force-rare {
+      display: block !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay"></div>
+  <div id="draw-screen">
+    <div id="button-container">
+      <button id="start-draw-1">單抽</button>
+      <button id="start-draw-8">8連抽</button>
+      <button id="force-rare">DEBUG: 強制出現稀有卡</button>
+    </div>
+  </div>
+  <div id="card-container"></div>
+  <button id="return-button">返回首頁</button>
+
+  <script>
+    const container = document.getElementById('card-container');
+    const overlay = document.getElementById('overlay');
+    const drawScreen = document.getElementById('draw-screen');
+    const returnButton = document.getElementById('return-button');
+
+    // 卡片尺寸設定 (可以調整這裡來改變卡片大小)
+    const CARD_WIDTH = 200; // 卡片寬度 (px)
+    const CARD_HEIGHT = 280; // 卡片高度 (px)
+    
+    // 背景圖片設定 (可以更改背景圖片)
+    const BACKGROUND_IMAGE = ''; // 設定背景圖片URL，留空則使用純色背景
+    
+    // 設定CSS變數
+    document.documentElement.style.setProperty('--card-width', `${CARD_WIDTH}px`);
+    document.documentElement.style.setProperty('--card-height', `${CARD_HEIGHT}px`);
+    if (BACKGROUND_IMAGE) {
+      document.documentElement.style.setProperty('--bg-image', `url('${BACKGROUND_IMAGE}')`);
+    }
+
+    // 控制DEBUG按鈕顯示/隱藏
+    const DEBUG_MODE = true; // 設定為 false 隱藏DEBUG按鈕，true 顯示
+    
+    if (DEBUG_MODE) {
+      document.body.classList.add('debug-mode');
+    }
+
+    // 根據您要求的機率設定卡片數據
+    const cardsData = [
+      { 
+        name: '稀有卡', 
+        img: 'https://i.postimg.cc/4dGsm4YQ/image.png', 
+        rate: 0.00045, // 0.045%
+        rarity: 'rare',
+        backClass: 'rare-back' // 特殊卡背
+      },
+      { 
+        name: '普通卡1', 
+        img: 'https://i.postimg.cc/3R1vJxKP/01.png', 
+        rate: 0.015, // 1.5%
+        rarity: 'common',
+        backClass: '' // 普通卡背
+      },
+      { 
+        name: '普通卡2', 
+        img: 'https://i.postimg.cc/3JVDw6TJ/02.png', 
+        rate: 0.06, // 6%
+        rarity: 'common',
+        backClass: '' // 普通卡背
+      },
+      { 
+        name: '普通卡3', 
+        img: 'https://i.postimg.cc/TYpDfxB4/03.png', 
+        rate: 0.25, // 25%
+        rarity: 'common',
+        backClass: '' // 普通卡背
+      },
+      { 
+        name: '普通卡4', 
+        img: 'https://i.postimg.cc/kgSRRcJN/04.png', 
+        rate: 0.67455, // 67.455%
+        rarity: 'common',
+        backClass: '' // 普通卡背
+      }
+    ];
+
+    function weightedDraw(forceRare = false) {
+      if (forceRare) return cardsData[0]; // 強制返回稀有卡
+      const r = Math.random();
+      let sum = 0;
+      for (const prize of cardsData) {
+        sum += prize.rate;
+        if (r < sum) return prize;
+      }
+      return cardsData[cardsData.length - 1];
+    }
+
+    function createCard(prize) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      
+      // 正確設定卡片HTML結構
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="card-back ${prize.backClass}"></div>
+          <div class="card-front" style="background-image: url('${prize.img}'); background-size: cover; background-position: center; background-repeat: no-repeat;"></div>
+        </div>
+      `;
+      
+      // 如果有動畫效果
+      if (prize.animation) {
+        const anim = document.createElement('img');
+        anim.src = prize.animation;
+        anim.className = prize.rarity === 'rare' ? 'rare-animation' : 'normal-animation';
+        card.appendChild(anim);
+      }
+      
+      return card;
+    }
+
+    function startDraw(count, forceRare = false) {
+      overlay.classList.add('active');
+      container.innerHTML = '';
+      
+      // 根據抽卡數量設定布局
+      if (count === 1) {
+        container.className = 'layout-1x1';
+      } else {
+        container.className = 'layout-1x8';
+      }
+      
+      container.style.display = 'grid';
+      drawScreen.style.display = 'none';
+      returnButton.style.display = 'none';
+
+      let flipped = 0;
+
+      for (let i = 0; i < count; i++) {
+        const prize = weightedDraw(forceRare);
+        const card = createCard(prize);
+        container.appendChild(card);
+
+        card.addEventListener('click', () => {
+          if (!card.classList.contains('flipped')) {
+            card.classList.add('focused');
+            setTimeout(() => {
+              card.classList.remove('focused');
+              card.classList.add('flipped');
+              flipped++;
+              if (flipped === count) {
+                setTimeout(() => {
+                  if (count > 1) {
+                    container.classList.remove('layout-1x8');
+                    container.classList.add('layout-2x4');
+                  }
+                  overlay.classList.remove('active');
+                  returnButton.style.display = 'block';
+                }, 1300);
+              }
+            }, 300);
+          }
+        });
+      }
+    }
+
+    function resetToHome() {
+      container.innerHTML = '';
+      container.style.display = 'none';
+      drawScreen.style.display = 'flex';
+      returnButton.style.display = 'none';
+    }
+
+    document.getElementById('start-draw-1').onclick = () => startDraw(1);
+    document.getElementById('start-draw-8').onclick = () => startDraw(8);
+    document.getElementById('force-rare').onclick = () => startDraw(1, true);
+    document.getElementById('return-button').onclick = resetToHome;
+  </script>
+</body>
+</html>
