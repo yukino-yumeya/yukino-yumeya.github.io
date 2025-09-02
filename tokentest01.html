@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Token 生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #9146FF, #772CE8);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            border-left: 4px solid #9146FF;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(145, 70, 255, 0.1);
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #9146FF;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 15px;
+            margin-bottom: 10px;
+        }
+
+        .step h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .step p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .oauth-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #9146FF, #772CE8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(145, 70, 255, 0.3);
+            margin: 10px 0;
+            width: 100%;
+            display: block;
+        }
+
+        .oauth-button:hover {
+            background: linear-gradient(135deg, #772CE8, #5D1A9B);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(145, 70, 255, 0.4);
+        }
+
+        .oauth-button:active {
+            transform: translateY(0);
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .warning h4 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .warning ul {
+            margin-left: 20px;
+        }
+
+        .warning li {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .token-display {
+            display: none;
+            background: #f0f8ff;
+            border: 2px solid #9146FF;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .token-display h3 {
+            color: #9146FF;
+            margin-bottom: 15px;
+        }
+
+        .token-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .copy-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-button:hover {
+            background: #218838;
+        }
+
+        .copy-button:active {
+            background: #1e7e34;
+        }
+
+        .logout-link {
+            color: #9146FF;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .logout-link:hover {
+            color: #772CE8;
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 1px solid #2196f3;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #1565c0;
+        }
+
+        .info-box h4 {
+            margin-bottom: 10px;
+            color: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Twitch Token 生成器</h1>
+            <p>安全快速地生成您的 Twitch Access Token</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <h4>💡 關於此工具</h4>
+                <p>此工具會協助您透過 Twitch 官方 OAuth 流程生成 Access Token，用於讀取頻道追隨者數量等 API 功能。</p>
+            </div>
+
+            <div class="warning" style="background: linear-gradient(135deg, #ffa726, #ff9800);">
+                <h4>📋 設定 Redirect URI 說明</h4>
+                <p><strong>重要：</strong>您需要在 Twitch 開發者控制台中設定 Redirect URI：</p>
+                <ul>
+                    <li>前往 <a href="https://dev.twitch.tv/console/apps" target="_blank" style="color: white; text-decoration: underline;">Twitch 開發者控制台</a></li>
+                    <li>編輯您的應用程式</li>
+                    <li>在 "OAuth Redirect URLs" 中添加您要使用的 URI</li>
+                    <li>常用設定：<code style="background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 3px;">http://localhost/</code></li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <span class="step-number">1</span>
+                <h3>設定 OAuth 參數</h3>
+                <p>請輸入您的 Twitch 應用程式資訊：</p>
+                <div style="margin: 15px 0;">
+                    <label for="clientId" style="display: block; margin-bottom: 5px; font-weight: bold;">Client ID:</label>
+                    <input type="text" id="clientId" 
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace;">
+                </div>
+                <div style="margin: 15px 0;">
+                    <label for="redirectUri" style="display: block; margin-bottom: 5px; font-weight: bold;">Redirect URI:</label>
+                    <input type="text" id="redirectUri" value="http://localhost" 
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace;">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        此URI必須在您的Twitch應用程式中預先註冊
+                    </small>
+                </div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <h3>確認登入狀態</h3>
+                <p>請確認您已經登入正確的 Twitch 帳號。如果需要切換帳號，請先登出：</p>
+                <a href="https://www.twitch.tv/logout" target="_blank" class="logout-link">前往 Twitch 登出</a>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <h3>開始 OAuth 認證</h3>
+                <p>點擊下方按鈕開始認證流程：</p>
+                <a href="#" id="oauthButton" class="oauth-button">
+                    🔐 開始 Twitch 認證
+                </a>
+            </div>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <h3>授權應用程式</h3>
+                <p>在 Twitch 頁面中點擊「授權」按鈕，允許應用程式讀取您的基本資訊和追隨者資料。</p>
+            </div>
+
+            <div class="step">
+                <span class="step-number">5</span>
+                <h3>複製您的 Token</h3>
+                <p>認證成功後，您的 Access Token 將顯示在下方：</p>
+            </div>
+
+            <div class="token-display" id="tokenDisplay">
+                <h3>🎉 認證成功！</h3>
+                <p>您的 Access Token：</p>
+                <div class="token-box" id="tokenBox">
+                    <!-- Token will be displayed here -->
+                </div>
+                <button class="copy-button" onclick="copyToken()">📋 複製 Token</button>
+                <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                    請將此 Token 貼到追隨者顯示頁面中使用
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>⚠️ 重要提醒</h4>
+                <ul>
+                    <li>請勿將您的 Access Token 分享給他人</li>
+                    <li>Token 有時效性，如果過期請重新生成</li>
+                    <li>此 Token 僅用於讀取公開的追隨者數量資訊</li>
+                    <li>如有安全疑慮，請到 Twitch 設定中撤銷應用程式權限</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Twitch OAuth 設定
+        const SCOPES = 'user:read:email moderator:read:followers';
+
+        // 生成隨機 state 參數用於安全驗證
+        function generateState() {
+            return Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+        }
+
+        // 建構 OAuth URL
+        function buildOAuthURL() {
+            const clientId = document.getElementById('clientId').value.trim();
+            const redirectUri = document.getElementById('redirectUri').value.trim();
+            
+            if (!clientId) {
+                alert('請輸入 Client ID');
+                return null;
+            }
+            
+            if (!redirectUri) {
+                alert('請輸入 Redirect URI');
+                return null;
+            }
+            
+            const state = generateState();
+            sessionStorage.setItem('oauth_state', state);
+            
+            const params = new URLSearchParams({
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                response_type: 'token',
+                scope: SCOPES,
+                state: state
+            });
+            
+            return `https://id.twitch.tv/oauth2/authorize?${params.toString()}`;
+        }
+
+        // 設定 OAuth 按鈕
+        document.getElementById('oauthButton').addEventListener('click', function(e) {
+            e.preventDefault();
+            const oauthUrl = buildOAuthURL();
+            if (oauthUrl) {
+                window.location.href = oauthUrl;
+            }
+        });
+
+        // 檢查 URL 中是否有 access token (OAuth callback)
+        function checkForToken() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            
+            const accessToken = params.get('access_token');
+            const state = params.get('state');
+            const storedState = sessionStorage.getItem('oauth_state');
+            
+            if (accessToken && state && state === storedState) {
+                displayToken(accessToken);
+                // 清除 URL 中的 hash
+                window.history.replaceState({}, document.title, window.location.pathname);
+                // 清除 stored state
+                sessionStorage.removeItem('oauth_state');
+            }
+        }
+
+        // 顯示 token
+        function displayToken(token) {
+            document.getElementById('tokenBox').textContent = token;
+            document.getElementById('tokenDisplay').style.display = 'block';
+            
+            // 滾動到 token 顯示區域
+            document.getElementById('tokenDisplay').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        // 複製 token 到剪貼簿
+        function copyToken() {
+            const tokenBox = document.getElementById('tokenBox');
+            const token = tokenBox.textContent;
+            
+            navigator.clipboard.writeText(token).then(function() {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ 已複製！';
+                button.style.background = '#28a745';
+                
+                setTimeout(function() {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }).catch(function(err) {
+                // 備用複製方法
+                const textArea = document.createElement('textarea');
+                textArea.value = token;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ 已複製！';
+                setTimeout(function() {
+                    button.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        // 頁面載入時檢查是否有 token
+        window.addEventListener('load', checkForToken);
+    </script>
+</body>
+</html>
